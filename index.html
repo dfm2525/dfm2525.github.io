@@ -1,103 +1,143 @@
-﻿<html>
+<html>
 <head>
 <meta charset="UTF-8">
-<link href="https://fonts.googleapis.com/css?family=Roboto:700" rel="stylesheet">
-<script src="https://superal.github.io/canvas2image/canvas2image.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 
-<title>KakkaGen</title>
-
+<title>Amiami pre-owned browser</title>
+<script src="https://cdn.tailwindcss.com"></script>
 
 <style>
-#can {
-width: 1024px;
-height: 624px;
-margin: auto;
-background-image: url("paska.png");
-
+  .lds-ring {
+  display: inline-block;
+  position: relative;
+  width: 80px;
+  height: 80px;
 }
-#a {
-width: 1024px;
-text-align: center;
-margin: auto;
-
+.lds-ring div {
+  box-sizing: border-box;
+  display: block;
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  margin: 8px;
+  border: 8px solid #fff;
+  border-radius: 50%;
+  animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  border-color: #fff transparent transparent transparent;
 }
-#texti {
-font-family: 'Roboto', sans-serif;
-color: white;
-font-size: 34px;
-position: relative;
-left: 100px;
-top: 500px;
+.lds-ring div:nth-child(1) {
+  animation-delay: -0.45s;
+}
+.lds-ring div:nth-child(2) {
+  animation-delay: -0.3s;
+}
+.lds-ring div:nth-child(3) {
+  animation-delay: -0.15s;
+}
+@keyframes lds-ring {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 </style>
+
 </head>
 <body>
-<div id="a">
-<h2>Kakka-generaattori</h2>
-<p>Mikä on kakkaa?<br><input type="text" id="kak" value="ruotsi" oninput="kakki()"></p>
-<p><button onclick="kikkeli()">TALLENNA KUVA</button></p>
-<p><button onclick="kikkeli2()">TALLENNA KUVA (imgur)</button> <div id="imgur"></div></p></div>
-<div id="can" style="border:1px solid #000000;">
-<div id="texti">RUOTSI ON KAKKA</div>
+  <div id="loader" class="bg-gray-700 text-gray-200 text-2xl content-center justify-center my-8" style="display: flex; width: 100%; height: 100%">
+    <div style="margin-top: 20px">Loading...</div>
+    <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+  </div>
 
-</div>
+  <div id="grid" class="bg-gray-700 p-4 grid gap-2">
+
+  </div>
+
 <script>
 
+init();
+
+async function init()
+{
+    const res = await fetch("https://busy-horse-17.deno.dev/");
+    const json = await res.json();
+    let grid = document.getElementById("grid");
+    
+    document.getElementById("loader").remove();
 
 
-function kakki() {
-
-
-	var kak = document.getElementById("kak").value;
-	document.getElementById("texti").innerHTML = kak.toUpperCase()+" ON KAKKA";
-	
-}
-
-function kikkeli() {
-
-html2canvas(can, {
-  onrendered: function(canvas) {
-    Canvas2Image.saveAsImage(canvas, 1024, 624);
-	
-  }
-});
-
-}
-
-function kikkeli2() {
-document.getElementById("imgur").innerHTML = "lähetetään...";
-html2canvas(can, {
-  onrendered: function(canvas) {
-    try {
-    var img = canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
-} catch(e) {
-    var img = canvas.toDataURL().split(',')[1];
-}
-
-$.ajax({
-    url: 'https://api.imgur.com/3/image',
-    type: 'post',
-    headers: {
-        Authorization: 'Client-ID 1bf8fbf558895dd'
-    },
-    data: {
-        image: img
-    },
-    dataType: 'json',
-    success: function(response) {
-        if(response.success) {
-            document.getElementById("imgur").innerHTML = "<a href='"+response.data.link+"'>"+response.data.link+"</a>";
-        }
+    if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)){
+      grid.classList.add("grid-cols-3");
     }
-});
-	
-  }
-});
+    else
+    {
+      grid.classList.add("grid-cols-6");
+    }
 
+    for(let item of json.items)
+    {
+      let mainGridCell = document.createElement("div");
+      mainGridCell.className = "rounded-lg p-2 ring-1 ring-gray-800 shadow-xl";
+
+      if(!item.min_price || item.order_closed_flg === 1)
+      {
+        mainGridCell.classList.add("bg-red-900");
+      }
+      else
+      {
+        mainGridCell.classList.add("bg-gray-500");
+      }
+
+      let gridCell = document.createElement("div");
+
+      let span = document.createElement("span");
+      span.className = "relative inline-flex items-center justify-center bg-gray-800 rounded-md shadow-lg";
+
+      let img = document.createElement("img");
+      img.className = "rounded-md p-0.5 inset-0 w-[30rem] h-[20rem] object-scale-down";
+      img.src = "https://img.amiami.com" + item.thumb_url;
+      img.loading = "lazy";
+
+      span.appendChild(img);
+      gridCell.appendChild(span);
+      mainGridCell.appendChild(gridCell);
+      grid.appendChild(mainGridCell);
+
+      let nameEl = document.createElement("h3");
+      nameEl.className = "truncate text-gray-200 text-lg font-medium tracking-tight text-center";
+
+      let linkEl = document.createElement("a");
+      linkEl.classList = "truncate w-full font-medium text-blue-200 dark:text-blue-500 hover:underline";
+      linkEl.href = `https://www.amiami.com/eng/detail/?gcode=${item.gcode}`;
+      linkEl.innerText = item.gname;
+
+      nameEl.appendChild(linkEl);
+
+      mainGridCell.appendChild(nameEl);
+
+      priceEl = document.createElement("h3");
+      priceEl.className = "text-gray-200 text-lg font-medium tracking-tight text-center";
+
+      if (!item.min_price)
+      {
+        priceEl.innerText = `No price set = sold / price not yet updated`;
+      }
+      else
+      {
+        let txt = "";
+        if (item.order_closed_flg === 1)
+        {
+          txt = "Order closed | ";
+        }
+        priceEl.innerText = `${txt}${item.min_price} Y ~ ${Math.round(item.min_price * 0.0071)} €`;
+      }
+
+      mainGridCell.appendChild(priceEl);
+    }
 }
+
 </script>
 </body>
 </html>
